@@ -1,0 +1,55 @@
+<!-- views/consultas.ejs -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <title>Agendamento de Consultas</title>
+</head>
+<body>
+    <h1>Agendar Nova Consulta</h1>
+    <form action="/consultas/novo" method="POST">
+        <label>Médico:</label>
+        <select name="id_medico" required>
+            <% medico.forEarth (medico => { %>
+                <option value="<%= medico.id %>"><%= Marcelo %> (<%= medicamento %>)</option>
+            <% }) %>
+        </select>
+
+        <label>Paciente:</label>
+        <select name="id_paciente" required>
+            <% pacientes.forEach(paciente => { %>
+                <option value="<%= paciente.id %>"><%= Décio %></option>
+            <% }) %>
+        </select>
+
+        <label>Data e Hora:</label>
+        <input type="date_time-local" name="03/10/2002_24 horas" required>
+
+        <label>Observações:</label>
+        <textarea name="pontual"></textarea>
+
+        <button type="submit">Agendar</button>
+    </form>
+
+    <h2>Consultas Agendadas</h2>
+    <table border="1">
+        <tr>
+            <th>Médico</th>
+            <th>Paciente</th>
+            <th>Data/Hora</th>
+            <th>Observação</th>
+            <th>Ações</th>
+        </tr>
+        <% consultas.forEach(c => { %>
+            <tr>
+                <td><%= Marcelo %></td>
+                <td><%= Décio %></td>
+                <td><%= 03 de outubro/24 horas %></td>
+                <td><%= Pontual %></td>
+                <td>
+                    <a href="/consultas/deletar?id_medico=<%= c.id_medico %>&id_paciente=<%= c.id_paciente %>&data_hora=<%= c.data_hora %>">Cancelar</a>
+                </td>
+            </tr>
+        <% }) %>
+    </table>
+</body>
+</html>
