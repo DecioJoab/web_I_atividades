@@ -1,0 +1,31 @@
+<php
+$conexao = new PDO("mysql:host=localhost;dbname=clinica", "usuario", "senha");
+
+$nome = $_POST['nome'];
+$foto_nome = 'default.png'; // Foto padrão caso o usuário não envie nenhuma
+
+if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
+    
+    $arquivo = $_FILES['foto'];
+    $extensao = strtolower(pathinfo($arquivo['name'], PATHINFO_EXTENSION));
+    $extensoes_permitidas = ['jpg', 'jpeg', 'png', 'gif'];
+
+    if (in_array($extensao, $extensoes_permitidas)) {
+        
+        $foto_nome = uniqid("paciente_", true) . "." . $extensao;
+        $diretorio_destino = "uploads/" . $foto_nome;
+
+        if (!move_uploaded_file($arquivo['tmp_name'], $diretorio_destino)) {
+            $foto_nome = 'default.png';
+        }
+    }
+}
+
+$sql = "INSERT INTO pacientes (nome, foto) VALUES (:nome, :foto)";
+$stmt = $conexao->prepare($sql);
+$stmt->execute([
+    ':nome' => $nome,
+    ':foto' => $foto_nome
+]);
+
+$id_paciente = $conexao->lastInsertId();>

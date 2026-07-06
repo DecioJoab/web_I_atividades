@@ -1,0 +1,1 @@
+ALTER TABLE pacientes ADD COLUMN foto VARCHAR(255) DEFAULT 'default.png';
