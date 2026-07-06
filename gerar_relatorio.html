@@ -1,0 +1,107 @@
+<?php
+// 1. Carrega o autoloader do Composer e inicia a sessão/conexão
+require_once 'vendor/autoload.php';
+
+// IMPORTANTE: Use o namespace correto do DomPDF
+use Dompdf\Dompdf;
+use Dompdf\Options;
+
+// Substitua pela sua conexão PDO correta do projeto
+$conexao = new PDO("mysql:host=localhost;dbname=clinica;charset=utf8mb4", "usuario", "senha");
+
+// 2. Busca as consultas fazendo JOIN para obter os nomes do Paciente e do Médico
+// (Ajuste os nomes das tabelas e colunas conforme o seu banco N-N)
+$sql = "SELECT 
+            p.nome AS paciente_nome, 
+            m.nome AS medico_nome, 
+            c.data_hora 
+        FROM consultas c
+        JOIN pacientes p ON c.paciente_id = p.id
+        JOIN medicos m ON c.medico_id = m.id
+        ORDER BY c.data_hora DESC";
+
+$stmt = $conexao->query($sql);
+$consultas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// 3. Monta o HTML do Relatório
+// Dica: Use estilos CSS inline ou internos simples. O DomPDF não suporta Flexbox/Grid modernos.
+$html = '
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Consultas</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 14px; color: #333; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #0056b3; padding-bottom: 10px; }
+        .header h1 { margin: 0; color: #0056b3; font-size: 24px; }
+        .header p { margin: 5px 0 0 0; color: #666; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f2f2f2; color: #0056b3; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .footer { position: fixed; bottom: 0; width: 100%; text-align: center; font-size: 11px; color: #999; border-top: 1px solid #ddd; padding-top: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Clínica Médica - Relatório de Consultas</h1>
+        <p>Gerado em: ' . date('d/m/Y H:i') . '</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Paciente</th>
+                <th>Médico</th>
+                <th>Data e Hora</th>
+            </tr>
+        </thead>
+        <tbody>';
+
+        if (count($consultas) > 0) {
+            foreach ($consultas as $consulta) {
+                // Formata a data vinda do banco (YYYY-MM-DD HH:MM:SS) para o padrão brasileiro
+                $data_formatada = date('d/m/Y H:i', strtotime($consulta['data_hora']));
+                
+                $html .= '<tr>';
+                $html .= '<td>' . htmlspecialchars($consulta['paciente_nome']) . '</td>';
+                $html .= '<td>' . htmlspecialchars($consulta['medico_nome']) . '</td>';
+                $html .= '<td>' . $data_formatada . '</td>';
+                $html .= '</tr>';
+            }
+        } else {
+            $html .= '<tr><td colspan="3" style="text-align:center;">Nenhuma consulta registrada.</td></tr>';
+        }
+
+$html .= '
+        </tbody>
+    </table>
+
+    <div class="footer">
+        Página 1 de 1
+    </div>
+
+</body>
+</html>';
+
+// 4. Configuração e Inicialização do DomPDF
+$options = new Options();
+$options->set('defaultFont', 'Arial');
+$options->set('isRemoteEnabled', true); // Permite carregar imagens via HTTP se necessário
+
+$dompdf = new Dompdf($options);
+
+// Carrega o conteúdo HTML gerado acima
+$dompdf->loadHtml($html);
+
+// (Opcional) Define o tamanho do papel e a orientação
+$dompdf->setPaper('A4', 'portrait');
+
+// Renderiza o HTML para PDF
+$dompdf->render();
+
+// Força o download do arquivo no navegador do usuário
+$dompdf->stream("relatorio_consultas_" . date('Ymd_His') . ".pdf", array("Attachment" => true));
+exit;
